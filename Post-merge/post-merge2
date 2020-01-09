@@ -1,0 +1,40 @@
+#!/bin/bash
+exec </dev/tty
+
+###################################################################################################################
+## Runs "npm install" and/or "composer install" if their config files where changed and depending on user input. ##
+###################################################################################################################
+
+COUNTER=0
+changed_files=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)
+install=()
+
+run_config() {
+    echo "$changed_files" | grep --quiet "$1" && eval "$2"
+}
+
+ask_config() {
+    echo -ne "Do you want to run '\e[33m$*\e[39m'? (\e[32my\e[39m/\e[31mn\e[39m) "
+    read answer
+
+    while [[ "$answer" != "y" && "$answer" != "n" ]]
+    do
+        echo -ne "[\e[33m$*\e[39m]Wrong input. try again. (\e[32my\e[39m/\e[31mn\e[39m) "
+        read answer
+    done
+
+    if [[ "$answer" == "y" ]]; then
+        install+=("$*")
+    fi
+}
+
+run_config package.json "ask_config ""npm install"" "
+run_config composer.json "ask_config ""composer install"" "
+# Add here more if needed.
+
+for COMMAND in "${install[@]}"
+do
+    echo "Running $COMMAND..."
+    $COMMAND
+    echo "$COMMAND completed!"
+done

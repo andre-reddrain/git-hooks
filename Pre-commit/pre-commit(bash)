@@ -1,0 +1,70 @@
+#!/bin/bash
+exec </dev/tty
+
+###################################################################################################################################
+## Verifies if PHP and PHPCS are installed. Runs PHPCS for all staged php files, and blocks the commit, depending on user input. ##
+###################################################################################################################################
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".php\{0,1\}$")
+PASS=true
+INSTALL=1
+
+if [ "$STAGED_FILES" = "" ]; then
+  exit 0
+fi
+
+which php &>/dev/null
+
+if [[ "$?" == 1 ]]; then
+  echo -e "PHP not installed \e[31m✘\e[0m"
+  INSTALL=0
+else
+  echo -e "PHP installed \e[32m✔\e[0m"
+fi
+
+which ./vendor/bin/phpcs &>/dev/null
+
+if [[ "$?" == 1 ]]; then
+  echo -e "PHPCS not installed \e[31m✘\e[0m"
+  INSTALL=0
+else
+  echo -e "PHPCS installed \e[32m✔\e[0m"
+fi
+
+if [[ $INSTALL == 0 ]]; then
+  exit 0
+fi
+
+echo "Validating PHPCS..."
+
+for FILE in $STAGED_FILES; do
+  vendor/bin/phpcs "$FILE"
+
+  if [[ "$?" != 0 ]]; then
+    PASS=false
+  fi
+done
+
+if ! $PASS; then
+  echo -e "\e[31mPHPCS Failed!\e[0m"
+  vendor/bin/phpcs $STAGED_FILES --report=summary
+
+  echo -ne "Do you want to commit with errors? (\e[32my\e[39m/\e[31mn\e[39m) "
+  read answer
+
+  while [[ "$answer" != "y" && "$answer" != "n" ]]
+  do
+      echo -ne "Wrong input. try again. (\e[32my\e[39m/\e[31mn\e[39m) "
+      read answer
+  done
+
+  if [[ "$answer" == "y" ]]; then
+    echo -e "\e[93mCommiting with errors...\e[0m"
+  else
+    exit 1
+  fi
+else
+  echo -e "\e[32mPHPCS Passed. Commiting...\e[0m"
+fi
+
+exit $?
