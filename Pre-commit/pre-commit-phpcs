@@ -8,7 +8,7 @@ exec </dev/tty
 # Color vars
 C_RED="\033[31m"
 C_GREEN="\033[32m"
-C_YELLOW="\033[38m"
+C_YELLOW="\033[33m"
 
 # Background vars
 B_RED="\033[41m"
