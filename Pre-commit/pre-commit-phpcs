@@ -24,6 +24,12 @@ fi
 
 which ./vendor/bin/phpcs &>/dev/null
 
+#Docker
+
+#Node
+#npm
+#eslint
+
 if [[ "$?" == 1 ]]; then
   echo -e "PHPCS not installed \e[31m✘\e[0m"
   INSTALL=0

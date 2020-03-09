@@ -48,4 +48,4 @@ while read local_ref local_sha remote_ref remote_sha; do
                 fi
         fi
 done
-#TODO -> When delete a remote branch, output "Merge completed! X commits are now needed to be pushed!"
+#//TODO -> When delete a remote branch, output "Merge completed! X commits are now needed to be pushed!"
