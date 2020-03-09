@@ -1,0 +1,86 @@
+#!/bin/bash
+exec </dev/tty
+
+###################################################################################################################################
+## Verifies if PHP and PHPCS are installed. Runs PHPCS for all staged php files, and blocks the commit, depending on user input. ##
+###################################################################################################################################
+
+# Color vars
+C_RED="\033[31m"
+C_GREEN="\033[32m"
+C_YELLOW="\033[33m"
+
+# Background vars
+B_RED="\033[41m"
+
+# Clear Format
+NO_FORMAT="\033[0m"
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".php\{0,1\}$")
+PASS=true
+INSTALL=1
+
+if [ "$STAGED_FILES" = "" ]; then
+  exit 0
+fi
+
+which node &>/dev/null
+
+if [[ "$?" == 1 ]]; then
+  echo -e "NodeJS not installed ${C_RED}✘${NO_FORMAT}"
+  INSTALL=0
+else
+  echo -e "NodeJS installed ${C_GREEN}✔${NO_FORMAT}"
+fi
+
+which npm &>/dev/null
+
+if [[ "$?" == 1 ]]; then
+  echo -e "NPM not installed ${C_RED}✘${NO_FORMAT}"
+  INSTALL=0
+else
+  echo -e "NPM installed ${C_GREEN}✔${NO_FORMAT}"
+fi
+
+if [[ $INSTALL == 0 ]]; then
+  exit 0
+fi
+
+#//TODO Check if ESLint is installed
+
+#//TODO Run ESLint on all files
+
+#//TODO Do the same thing on PHPCS for ESLint
+
+# echo "Validating PHPCS..."
+
+# for FILE in $STAGED_FILES; do
+#   vendor/bin/phpcs --standard=PSR12 "$FILE"
+
+#   if [[ "$?" != 0 ]]; then
+#     PASS=false
+#   fi
+# done
+
+# if ! $PASS; then
+#   echo -e "${B_RED}PHPCS Failed!${NO_FORMAT}"
+#   vendor/bin/phpcs $STAGED_FILES --report=summary
+
+#   echo -ne "Do you want to commit with errors? (${C_GREEN}y${NO_FORMAT}/${C_RED}n${NO_FORMAT}) "
+#   read answer
+
+#   while [[ "$answer" != "y" && "$answer" != "n" ]]; do
+#     echo -ne "Wrong input. try again. (${C_GREEN}y${NO_FORMAT}/${C_RED}n${NO_FORMAT}) "
+#     read answer
+#   done
+
+#   if [[ "$answer" == "y" ]]; then
+#     echo -e "${C_YELLOW}Commiting with errors...${NO_FORMAT}"
+#   else
+#     exit 1
+#   fi
+# else
+#   echo -e "${C_GREEN}PHPCS Passed. Commiting...${NO_FORMAT}"
+# fi
+
+# exit $?
