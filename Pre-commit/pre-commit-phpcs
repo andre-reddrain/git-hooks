@@ -5,10 +5,6 @@ exec </dev/tty
 ## Verifies if PHP and PHPCS are installed. Runs PHPCS for all staged php files, and blocks the commit, depending on user input. ##
 ###################################################################################################################################
 
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".php\{0,1\}$")
-PASS=true
-INSTALL=1
-
 # Color vars
 C_RED="\033[31m"
 C_GREEN="\033[32m"
@@ -19,6 +15,10 @@ B_RED="\033[41m"
 
 # Clear Format
 NO_FORMAT="\033[0m"
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".php\{0,1\}$")
+PASS=true
+INSTALL=1
 
 if [ "$STAGED_FILES" = "" ]; then
   exit 0
