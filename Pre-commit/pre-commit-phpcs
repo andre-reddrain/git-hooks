@@ -10,13 +10,15 @@ PASS=true
 INSTALL=1
 
 # Color vars
-C_GREEN="\033[32m"
 C_RED="\033[31m"
+C_GREEN="\033[32m"
 C_YELLOW="\033[38m"
-NO_FORMAT="\033[0m"
 
 # Background vars
 B_RED="\033[41m"
+
+# Clear Format
+NO_FORMAT="\033[0m"
 
 if [ "$STAGED_FILES" = "" ]; then
   exit 0
