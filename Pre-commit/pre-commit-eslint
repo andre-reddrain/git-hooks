@@ -42,11 +42,20 @@ else
   echo -e "NPM installed ${C_GREEN}✔${NO_FORMAT}"
 fi
 
+#//TODO Check if ESLint is installed
+
+which npx eslint &>/dev/null
+
+if [[ "$?" == 1 ]]; then
+  echo -e "ESLint not installed ${C_RED}✘${NO_FORMAT}"
+  INSTALL=0
+else
+  echo -e "ESLint installed ${C_GREEN}✔${NO_FORMAT}"
+fi
+
 if [[ $INSTALL == 0 ]]; then
   exit 0
 fi
-
-#//TODO Check if ESLint is installed
 
 #//TODO Run ESLint on all files
 
