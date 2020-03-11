@@ -1,0 +1,191 @@
+#!/bin/bash
+exec </dev/tty
+
+###################################################################################################################################
+## Verifies if PHP and PHPCS are installed. Runs PHPCS for all staged php files, and blocks the commit, depending on user input. ##
+###################################################################################################################################
+
+# Color vars
+C_RED="\033[31m"
+C_GREEN="\033[32m"
+C_YELLOW="\033[33m"
+
+# Background vars
+B_RED="\033[41m"
+
+# Clear Format
+NO_FORMAT="\033[0m"
+
+STAGED_PHP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".php\{0,1\}$")
+STAGED_JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".js\{0,1\}$")
+STAGED_VUE_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".vue\{0,1\}$")
+
+PASS=true
+INSTALL=1
+
+# if [ "$STAGED_PHP_FILES" = "" ] & [ "$STAGED_JS_FILES" = "" ]; then
+#   echo -e "No PHP or JS files to be commited. Preparing commit..."
+#   exit 0
+# fi
+
+# if [ "$STAGED_PHP_FILES" = "" ]; then
+#   echo -e "No PHP files to be commited."
+# else
+#   echo "Validating PHPCS..."
+
+#   for FILE in $STAGED_PHP_FILES; do
+#     vendor/bin/phpcs --standard=PSR12 "$FILE"
+
+#     if [[ "$?" != 0 ]]; then
+#       PASS=false
+#     fi
+#   done
+
+#   if ! $PASS; then
+#     # echo -e "${B_RED}PHPCS Failed!${NO_FORMAT}"
+#     # vendor/bin/phpcs $STAGED_FILES --report=summary
+#     echo -e "PHPCS validation: ${C_RED}✘${NO_FORMAT}"
+#   else
+#     echo -e "${C_GREEN}PHPCS Passed!${NO_FORMAT}"
+#   fi
+# fi
+
+# if [ "$STAGED_JS_FILES" = "" ]; then
+#   echo -e "No JS files to be commited."
+# else
+#   #//TODO Validate JS using ESLint
+#   echo ""
+# fi
+
+# if [ "$STAGED_VUE_FILES" = "" ]; then
+#   echo -e "No VUE files to be commited."
+# else
+#   #//TODO Validate Vue using ESLint
+#   echo ""
+# fi
+
+# which node &>/dev/null
+
+# if [[ "$?" == 1 ]]; then
+#   echo -e "NodeJS not installed ${C_RED}✘${NO_FORMAT}"
+#   INSTALL=0
+# else
+#   echo -e "NodeJS installed ${C_GREEN}✔${NO_FORMAT}"
+# fi
+
+# which npm &>/dev/null
+
+# if [[ "$?" == 1 ]]; then
+#   echo -e "NPM not installed ${C_RED}✘${NO_FORMAT}"
+#   INSTALL=0
+# else
+#   echo -e "NPM installed ${C_GREEN}✔${NO_FORMAT}"
+# fi
+
+# which npx eslint &>/dev/null
+
+# if [[ "$?" == 1 ]]; then
+#   echo -e "ESLint not installed ${C_RED}✘${NO_FORMAT}"
+#   INSTALL=0
+# else
+#   echo -e "ESLint installed ${C_GREEN}✔${NO_FORMAT}"
+# fi
+
+# if [[ $INSTALL == 0 ]]; then
+#   exit 0
+# fi
+
+# #//TODO Method to validate files
+
+# #//TODO Method to check instalation requirements
+
+# if ! $PASS; then
+#   echo -ne "Do you want to commit with errors? (${C_GREEN}y${NO_FORMAT}/${C_RED}n${NO_FORMAT}) "
+#   read answer
+
+#   while [[ "$answer" != "y" && "$answer" != "n" ]]; do
+#     echo -ne "Wrong input. try again. (${C_GREEN}y${NO_FORMAT}/${C_RED}n${NO_FORMAT}) "
+#     read answer
+#   done
+
+#   if [[ "$answer" == "y" ]]; then
+#     echo -e "${C_YELLOW}Commiting with errors...${NO_FORMAT}"
+#   else
+#     exit 1
+#   fi
+# fi
+
+# exit $?
+
+check_instalation() {
+  # echo "$1 / $2"
+  which $2 &>/dev/null
+
+  if [[ "$?" == 1 ]]; then
+    echo -e "$1 not installed ${C_RED}✘${NO_FORMAT}"
+    INSTALL=0
+    return 0
+  else
+    echo -e "$1 installed ${C_GREEN}✔${NO_FORMAT}"
+    return 1
+  fi
+}
+
+check_staged_files() {
+  echo "check_staged_files()! To be done!"
+  #//TODO - check_staged_files
+}
+
+run_validation() {
+  echo "run_validation()! To be done!"
+  #//TODO - run_validation
+  # if [ "$STAGED_PHP_FILES" = "" ]; then
+  #   echo -e "No PHP files to be commited."
+  # else
+  #   echo "Validating PHPCS..."
+
+  #   for FILE in $STAGED_PHP_FILES; do
+  #     vendor/bin/phpcs --standard=PSR12 "$FILE"
+
+  #     if [[ "$?" != 0 ]]; then
+  #       PASS=false
+  #     fi
+  #   done
+
+  #   if ! $PASS; then
+  #     # echo -e "${B_RED}PHPCS Failed!${NO_FORMAT}"
+  #     # vendor/bin/phpcs $STAGED_FILES --report=summary
+  #     echo -e "PHPCS validation: ${C_RED}✘${NO_FORMAT}"
+  #   else
+  #     echo -e "${C_GREEN}PHPCS Passed!${NO_FORMAT}"
+  #   fi
+  # fi
+}
+
+check_instalation "Docker" "sdocker"
+
+if [[ "$?" != 1 ]]; then
+  INSTALL=1
+  check_instalation "PHP" "php" #PHP
+  check_instalation "NodeJS" "node" #Node
+  check_instalation "NPM" "npm" #NPM
+  check_instalation "ESLint" "npx eslint" #ESLint
+else
+  echo "Now validate the staged files! (PHP, JS, VUE)"
+  #//TODO Now validate the PHPCS and ESLint
+fi
+
+#Temp
+if [[ $INSTALL == 0 ]]; then
+  echo "Alguma coisa não foi instalada como deve de ser!"
+  exit 1
+else
+  echo "Tudo foi instalado com sucesso!"
+  exit 1
+fi
+
+exit 1  #Temp
+
+#run_validation "$STAGED_PHP_FILES" "PHPCS"
+#run_validation "$STAGED_JS_FILES" "ESLint"
+#run_validation "$STAGED_VUE_FILES" "ESLint"
