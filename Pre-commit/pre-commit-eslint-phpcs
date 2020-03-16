@@ -2,7 +2,11 @@
 exec </dev/tty
 
 ###################################################################################################################################
-## Verifies if PHP and PHPCS are installed. Runs PHPCS for all staged php files, and blocks the commit, depending on user input. ##
+## Validates PHPCS and ESLint, for PHP files, JS and Vue. Depending on the output of validations & user's input, it will commit. ##
+###################################################################################################################################
+## It will check installation of certain needed tools: Docker. If Docker is not installed: PHP, Node, NPM and ESlint (Locally).  ##
+## It will run the validation of PHPCS and ESlint. If both validations pass, it will open the commit message prompt.             ##
+## If any validation doesn't pass, it will ask the user if he wants to run a command to automatically fix some of the errors.    ##
 ###################################################################################################################################
 
 # Color vars
@@ -17,14 +21,20 @@ B_RED="\033[41m"
 NO_FORMAT="\033[0m"
 
 STAGED_PHP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".php\{0,1\}$")
-STAGED_JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".js\{0,1\}$")
-STAGED_VUE_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".vue\{0,1\}$")
+STAGED_JS_VUE_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".js\{0,1\}$\|.vue\{0,1\}$" | cut -d',' -f1)
 
+# Hook variables
 PASS=true
 INSTALL=1
+VALIDATIONS=()
 
+# Instalation checks
+DOCKER=1
+
+# Checks the instalation of the tool.
+# $1 - Name of the tool to be checked
+# $2 - Command that is used to check the instalation
 check_instalation() {
-  # echo "$1 / $2"
   which $2 &>/dev/null
 
   if [[ "$?" == 1 ]]; then
@@ -37,16 +47,16 @@ check_instalation() {
   fi
 }
 
-check_staged_files() {
-  echo "check_staged_files()! To be done!"
-  #//TODO - check_staged_files
-}
-
+# Runs a certain validation for a certain type of file (php, js, vue...).
+# $1 - Files to be validated
+# $2 - Command that runs the validation
+# $3 - Name of the validation tool (PHPCS, ESLint...)
+# $4 - File type to be validated
 run_validation() {
   if [ "$1" = "" ]; then
     echo -e "No $4 files to be validated by $3. Moving on..."
   else
-    echo "Validating $3..."
+    printf "\nValidating $3 ($4)..."
 
     for FILE in $1; do
       $2 "$FILE"
@@ -57,36 +67,92 @@ run_validation() {
     done
 
     if ! $PASS; then
-      # echo -e "${B_RED}PHPCS Failed!${NO_FORMAT}"
-      # vendor/bin/phpcs $STAGED_FILES --report=summary
-      echo -e "$3 validation ($4): ${C_RED}✘${NO_FORMAT}"
+      VALIDATIONS+=("$3 validation ($4): ${C_RED}✘${NO_FORMAT}")
     else
-      echo -e "${C_GREEN}$3 Passed!${NO_FORMAT}"
+      VALIDATIONS+=("$3 validation ($4): ${C_GREEN}✔${NO_FORMAT}")
     fi
   fi
 }
 
-check_instalation "Docker" "docker"
+# Ask a y/n question to the user.
+# $1 - Message to be a y/n question
+yes_no_question() {
+  echo -ne "$1 (${C_GREEN}y${NO_FORMAT}/${C_RED}n${NO_FORMAT}) "
+  read answer
 
+  while [[ "$answer" != "y" && "$answer" != "n" ]]; do
+    echo -ne "Wrong input. try again. (${C_GREEN}y${NO_FORMAT}/${C_RED}n${NO_FORMAT}) "
+    read answer
+  done
+
+  if [[ "$answer" == "y" ]]; then
+    return 0
+  else
+    return 1
+  fi
+
+  return $?
+}
+
+# Runs a command to fix automatically errors (Might not work everytime).
+# $1 - Command to run the fix
+# $2 - Type of the files to be fixed
+fix_errors() {
+  echo -e "${C_YELLOW}Fixing errors ($2)...${NO_FORMAT}"
+  $1
+}
+
+check_instalation "Docker" "docker" #Validation of Docker
+
+# If Docker not installed, it will check for the needed tools locally.
 if [[ "$?" != 1 ]]; then
+  DOCKER=0
   INSTALL=1
   check_instalation "PHP" "php" #PHP
   check_instalation "NodeJS" "node" #Node
   check_instalation "NPM" "npm" #NPM
   check_instalation "ESLint" "npx eslint" #ESLint
+
+  if [[ $INSTALL == 0 ]]; then
+    exit 1
+  fi
 fi
 
-#Temp Strings
-if [[ $INSTALL == 0 ]]; then
-  echo "Alguma coisa não foi instalada como deve de ser!"
-  exit 1
+run_validation "$STAGED_PHP_FILES" "vendor/bin/phpcs --ignore=*/*.blade.php --standard=PSR12" "PHPCS" "PHP"
+
+if [[ "$DOCKER" == 1 ]]; then
+  run_validation "$STAGED_JS_VUE_FILES" "docker run --rm -v $(pwd):/data cytopia/eslint" "ESLint" "Js / Vue"
 else
-  echo "Tudo foi instalado com sucesso!"
+  run_validation "$STAGED_JS_VUE_FILES" "npx eslint" "ESLint" "JS / Vue"
+fi
 
-  run_validation "$STAGED_PHP_FILES" "vendor/bin/phpcs --standard=PSR12" "PHPCS" "PHP"
-  run_validation "$STAGED_JS_FILES" "npx eslint" "ESLint" "JS"
-  run_validation "$STAGED_VUE_FILES" "npx eslint" "ESLint" "Vue"
+# Prints all validations done at the end
+for VALIDATION in "${VALIDATIONS[@]}"
+do
+    echo -e $VALIDATION
+done
 
-  #//TODO Print all validation lines (Line 156) at the same time! (Use a array)
-  exit 1
+# If any validation didn't pass, it can fix or commit the errors
+if ! $PASS; then
+  yes_no_question "Do you want to automatically fix some of the errors?"
+
+  if [[ "$?" == "0" ]]; then
+    fix_errors "vendor/bin/phpcbf $STAGED_PHP_FILES" "PHP"
+
+    if [[ "$DOCKER" == 1 ]]; then
+      fix_errors "docker run --rm -v $(pwd):/data cytopia/eslint --fix $STAGED_JS_VUE_FILES" "Js / Vue"
+    else
+      fix_errors "npx eslint --fix $STAGED_JS_VUE_FILES" "Js / Vue"
+    fi
+    echo -e "${C_GREEN}Errors have been fixed!${NO_FORMAT} Check changes and stage them!"
+    exit 1
+  else
+    yes_no_question "Do you want to commit with errors?"
+
+    if [[ "$?" == "0" ]]; then
+      echo -e "${C_YELLOW}Commiting with errors...${NO_FORMAT}"
+    else
+      exit 1
+    fi
+  fi
 fi
