@@ -2,6 +2,11 @@
 # Places the branch name before the commit message
 # Ex: [Testing] [Insert commit message here]
 
+# Args of the hook
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+SHA1=$3
+
 # This way you can customize which branches should be skipped when prepending commit message.
 if [ -z "$BRANCHES_TO_SKIP" ]; then
   BRANCHES_TO_SKIP=(master develop test)
