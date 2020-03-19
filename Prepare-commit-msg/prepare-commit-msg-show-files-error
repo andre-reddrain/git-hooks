@@ -2,7 +2,7 @@
 exec </dev/tty
 
 ###################################################################################################################################
-## Adds the filename if the file failed validation from PHPCS or ESLint (Php, Js & Vue) ##
+## Adds the filename if the file failed validation from PHPCS or ESLint (Php, Js & Vue)                                          ##
 ###################################################################################################################################
 
 STAGED_PHP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".php\{0,1\}$")
