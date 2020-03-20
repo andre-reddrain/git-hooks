@@ -45,6 +45,10 @@ if [[ "$?" != 1 ]]; then
   DOCKER=0
 fi
 
+if [[ "$STAGED_PHP_FILES" == "" && "$STAGED_JS_VUE_FILES" == "" ]]; then
+  exit 0
+fi
+
 PHP_FILES=$(vendor/bin/phpcs --ignore=*.blade.php --standard=PSR12 $STAGED_PHP_FILES | grep /home)
 
 if [[ "$DOCKER" == 1 ]]; then
@@ -59,6 +63,10 @@ if [[ "$DOCKER" == 1 ]]; then
   done
 else
   JS_VUE_FILES+=$(npx eslint $STAGED_JS_VUE_FILES | grep /home)
+fi
+
+if [[ "$PHP_FILES" == "" && "$JS_VUE_FILES" == "" ]]; then
+  exit 0
 fi
 
 echo -e "\nFiles with errors / warnings:" >> "$1"
