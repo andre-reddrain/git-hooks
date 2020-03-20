@@ -1,0 +1,81 @@
+#!/bin/bash
+exec </dev/tty
+
+###################################################################################################################################
+## Adds the filename if the file failed validation from PHPCS or ESLint (Php, Js & Vue)                                          ##
+###################################################################################################################################
+
+STAGED_PHP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".php\{0,1\}$")
+STAGED_JS_VUE_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".js\{0,1\}$\|.vue\{0,1\}$" | cut -d',' -f1)
+
+# Hook variables
+PASS=true
+INSTALL=1
+
+FILES=()
+
+# Instalation checks
+DOCKER=1
+
+# Hook vars
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+SHA1=$3
+
+JS_VUE_FILES=()
+
+# Checks the instalation of the tool.
+# $1 - Name of the tool to be checked
+# $2 - Command that is used to check the instalation
+check_instalation() {
+  which $2 &>/dev/null
+
+  if [[ "$?" == 1 ]]; then
+    INSTALL=0
+    return 0
+  else
+    return 1
+  fi
+}
+
+check_instalation "Docker" "docker" #Validation of Docker
+
+# If Docker not installed, it will check for the needed tools locally.
+if [[ "$?" != 1 ]]; then
+  DOCKER=0
+fi
+
+if [[ "$STAGED_PHP_FILES" == "" && "$STAGED_JS_VUE_FILES" == "" ]]; then
+  exit 0
+fi
+
+PHP_FILES=$(vendor/bin/phpcs --ignore=*.blade.php --standard=PSR12 $STAGED_PHP_FILES | grep /home)
+
+if [[ "$DOCKER" == 1 ]]; then
+  # JS_VUE_FILES+=$(npx eslint $STAGED_JS_VUE_FILES | grep /home)
+
+  for FILE in $STAGED_JS_VUE_FILES; do
+    TEMP="$(docker run --rm -v $(pwd):/data cytopia/eslint "$FILE")"
+
+    if [[ $TEMP == *"$FILE"* ]]; then
+      JS_VUE_FILES+="$FILE\n"
+    fi
+  done
+else
+  JS_VUE_FILES+=$(npx eslint $STAGED_JS_VUE_FILES | grep /home)
+fi
+
+if [[ "$PHP_FILES" == "" && "$JS_VUE_FILES" == "" ]]; then
+  exit 0
+fi
+
+echo -e "\nFiles with errors / warnings:" >> "$1"
+echo -e "${PHP_FILES//"FILE: "}" >> "$1"
+
+if [[ "$DOCKER" != 1 ]]; then
+  echo -e "$JS_VUE_FILES" >> "$1"
+else
+  for FILE in $JS_VUE_FILES; do
+    echo -e "$JS_VUE_FILES" >> "$1"
+  done
+fi
